@@ -20,11 +20,13 @@ export class SearchTourPage {
     await this.page.goto(url, { waitUntil: 'load', timeout: 30000 });
   }
 
-  async gotoWithFilters(countryValue, tourTypeValue, productTypeValue) {
+  async gotoWithFilters(countryValue, tourTypeValue, productTypeValue, freightType, programInc) {
     const params = new URLSearchParams();
     if (countryValue) params.set('STATEINC', countryValue);
     if (tourTypeValue) params.set('TOURTYPE', tourTypeValue);
     if (productTypeValue) params.set('PRODUCTTYPE', productTypeValue);
+    if (freightType) params.set('FREIGHTTYPE', freightType);
+    if (programInc) params.set('PROGRAMINC', programInc);
     await this.page.goto(`https://b2b.fstravel.com/search_tour?${params}`, { waitUntil: 'load', timeout: 30000 });
   }
 
