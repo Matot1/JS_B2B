@@ -5,3 +5,4 @@ test-results/
 playwright-report/
 *.log
 log.txt
+README_noGit.txt
