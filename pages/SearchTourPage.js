@@ -4,6 +4,7 @@ export class SearchTourPage {
     this.departureCityContainer = page.locator('.TOWNFROMINC_chosen');
     this.searchButton = page.locator('button.load');
     this.resultsContainer = page.locator('div.resultset');
+    this.moscowValue = '274286';
   }
 
   async goto(cityValue) {
@@ -14,14 +15,15 @@ export class SearchTourPage {
   }
 
   async gotoWithCountry(countryValue) {
-    const url = countryValue
-      ? `https://b2b.fstravel.com/search_tour?STATEINC=${countryValue}`
-      : 'https://b2b.fstravel.com/search_tour?';
-    await this.page.goto(url, { waitUntil: 'load', timeout: 30000 });
+    const params = new URLSearchParams();
+    params.set('TOWNFROMINC', this.moscowValue);
+    if (countryValue) params.set('STATEINC', countryValue);
+    await this.page.goto(`https://b2b.fstravel.com/search_tour?${params}`, { waitUntil: 'load', timeout: 30000 });
   }
 
   async gotoWithFilters(countryValue, tourTypeValue, productTypeValue, freightType, programInc, tourInc) {
     const params = new URLSearchParams();
+    params.set('TOWNFROMINC', this.moscowValue);
     if (countryValue) params.set('STATEINC', countryValue);
     if (tourTypeValue) params.set('TOURTYPE', tourTypeValue);
     if (productTypeValue) params.set('PRODUCTTYPE', productTypeValue);

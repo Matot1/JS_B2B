@@ -3,6 +3,30 @@ import { test, expect } from '@playwright/test';
 import { SearchTourPage } from '../../../pages/SearchTourPage.js';
 import { cityToAirportCode, cityToValue } from '../../../pages/cityCodes.js';
 import { countryToValue } from '../../../pages/countryCodes.js';
+import {
+  parseMonthYear,
+  getTourTexts,
+  getTourAndPriceTexts,
+  getVisibleResultCount,
+  setCurrency,
+  searchAndGetPrices,
+  setChild,
+  setAge,
+  getHotelRoomTexts,
+  searchAndGetTexts,
+  getHotelCities,
+  searchAndGetHotels,
+  getAllHotels,
+  selectHotels,
+  getResultHotelNames,
+  getResultMeals,
+  waitAndGetResults,
+  hasRedRows,
+  getResultRowClasses,
+  GROUP_CITIES,
+  STAR_VALUES,
+  MEALS,
+} from './helpers.js';
 
 // ===== Город отправления =====
 const cities = [
@@ -29,63 +53,10 @@ const programs = [
   { name: 'Тариф «Стандарт»', value: '14', expectedKeyword: 'Стандарт' },
 ];
 
-// ===== Даты (Zebra Datepicker) =====
-const monthNames = {
-  'Январь': 0, 'Февраль': 1, 'Март': 2, 'Апрель': 3, 'Май': 4, 'Июнь': 5,
-  'Июль': 6, 'Август': 7, 'Сентябрь': 8, 'Октябрь': 9, 'Ноябрь': 10, 'Декабрь': 11,
-};
-
-function parseMonthYear(str) {
-  const parts = str.replace(/[,]/g, '').trim().split(/\s+/);
-  if (parts.length < 2) return null;
-  const month = monthNames[parts[0]];
-  const year = parseInt(parts[1], 10);
-  if (isNaN(month) || isNaN(year)) return null;
-  return { month, year };
-}
-
-// ===== Общие хелперы =====
-function getTourTexts(page) {
-  return page.evaluate(() => {
-    const rows = document.querySelectorAll('tr[data-state]');
-    return Array.from(rows).map(r => {
-      const td = r.querySelector('td.tour');
-      if (!td) return '';
-      for (const n of td.childNodes) {
-        if (n.nodeType === 3) {
-          const t = n.textContent.trim();
-          if (t) return t;
-        }
-      }
-      return '';
-    }).filter(Boolean);
-  });
-}
-
-function getTourAndPriceTexts(page) {
-  return page.evaluate(() => {
-    const rows = document.querySelectorAll('tr[data-state]');
-    return Array.from(rows).map(r => {
-      const typePrice = r.querySelector('td.type_price');
-      const tour = r.querySelector('td.tour');
-      let tourText = '';
-      if (tour) {
-        for (const n of tour.childNodes) {
-          if (n.nodeType === 3) {
-            const t = n.textContent.trim();
-            if (t) { tourText = t; break; }
-          }
-        }
-      }
-      const priceText = typePrice?.textContent?.trim()?.toLowerCase() || '';
-      return { tourText, priceText };
-    });
-  });
-}
-
 test.describe('Фильтры страницы "Туры с перелетом"', () => {
 
   // ===== 1. Город отправления =====
+  test.describe('1. Город отправления', () => {
   for (const cityName of cities) {
     const expectedCode = cityToAirportCode[cityName];
     const cityValue = cityToValue[cityName];
@@ -118,7 +89,10 @@ test.describe('Фильтры страницы "Туры с перелетом"'
     });
   }
 
+  });
+
   // ===== 2. Страна =====
+  test.describe('2. Страна', () => {
   for (const countryName of countries) {
     const countryValue = countryToValue[countryName];
 
@@ -156,7 +130,10 @@ test.describe('Фильтры страницы "Туры с перелетом"'
     });
   }
 
+  });
+
   // ===== 3. Тип тура =====
+  test.describe('3. Тип тура', () => {
   for (const { country, countryValue: cv, tourTypeValue: ttv, expectedKeyword: ek } of tourTypes) {
     test(`Тип тура: ${ek} + ${country} — в столбце "Тур" указано "${ek}"`, async ({ page }) => {
       const searchPage = new SearchTourPage(page);
@@ -190,7 +167,10 @@ test.describe('Фильтры страницы "Туры с перелетом"'
     });
   }
 
+  });
+
   // ===== 4. Тип продукта =====
+  test.describe('4. Тип продукта', () => {
   test('Тип продукта: Статика — нет "невозвратный тариф", нет "Dynamic package"', async ({ page }) => {
     const searchPage = new SearchTourPage(page);
 
@@ -261,7 +241,10 @@ test.describe('Фильтры страницы "Туры с перелетом"'
     await page.waitForTimeout(10000);
   });
 
+  });
+
   // ===== 5. Авиаперелет =====
+  test.describe('5. Авиаперелет', () => {
   test('Авиаперелет: Чартер/блочная перевозка — нет "GDS"', async ({ page }) => {
     const searchPage = new SearchTourPage(page);
 
@@ -326,7 +309,10 @@ test.describe('Фильтры страницы "Туры с перелетом"'
     }
   });
 
+  });
+
   // ===== 6. Тур =====
+  test.describe('6. Тур', () => {
   test('Тур: случайный тур — в столбце "Тур" только выбранный тур', async ({ page }) => {
     const searchPage = new SearchTourPage(page);
 
@@ -374,7 +360,10 @@ test.describe('Фильтры страницы "Туры с перелетом"'
     }
   });
 
+  });
+
   // ===== 7. Программа =====
+  test.describe('7. Программа', () => {
   for (const { name, value, expectedKeyword } of programs) {
     test(`Программа: ${name} — в столбце "Тур" отображается "${expectedKeyword}"`, async ({ page }) => {
       const searchPage = new SearchTourPage(page);
@@ -415,7 +404,10 @@ test.describe('Фильтры страницы "Туры с перелетом"'
     });
   }
 
+  });
+
   // ===== 8. Даты вылета =====
+  test.describe('8. Даты вылета', () => {
   test('Даты: даты заезда попадают в диапазон "Вылет от" — "до"', async ({ page }) => {
     const searchPage = new SearchTourPage(page);
 
@@ -594,7 +586,10 @@ test.describe('Фильтры страницы "Туры с перелетом"'
     }
   });
 
+  });
+
   // ===== 9. Количество ночей =====
+  test.describe('9. Количество ночей', () => {
   test('Ночей от/до — количество ночей попадает в диапазон', async ({ page }) => {
     const searchPage = new SearchTourPage(page);
 
@@ -666,7 +661,10 @@ test.describe('Фильтры страницы "Туры с перелетом"'
     }
   });
 
+  });
+
   // ===== 10. Взрослых =====
+  test.describe('10. Взрослых', () => {
   test('Взрослых: выдача содержит туры с размещением не ниже выбранного', async ({ page }) => {
     const searchPage = new SearchTourPage(page);
 
@@ -739,47 +737,10 @@ test.describe('Фильтры страницы "Туры с перелетом"'
     }
   });
 
+  });
+
   // ===== 11. Дети/возраст =====
-
-  async function setChild(page, value) {
-    await page.locator('.CHILD_chosen .chosen-single').click();
-    await page.waitForTimeout(300);
-    await page.locator(`.CHILD_chosen .active-result[data-option-array-index="${value}"]`).click();
-    await page.waitForTimeout(500);
-  }
-
-  async function setAge(page, ageIndex, value) {
-    const ageContainer = page.locator('.child_ages .chosen-container').nth(ageIndex);
-    await ageContainer.locator('.chosen-single').click();
-    await page.waitForTimeout(300);
-    await ageContainer.locator(`.active-result[data-option-array-index="${value}"]`).click();
-    await page.waitForTimeout(500);
-  }
-
-  async function getHotelRoomTexts(page) {
-    return page.evaluate(() => {
-      const rows = document.querySelectorAll('tr[data-state]');
-      return Array.from(rows).map(r => {
-        const td = r.querySelector('td.hotel-room');
-        if (!td) return '';
-        return td.textContent.trim();
-      }).filter(Boolean);
-    });
-  }
-
-  async function searchAndGetTexts(page, searchPage) {
-    await searchPage.clickSearch();
-    await page.waitForTimeout(3000);
-    try {
-      await searchPage.waitForResults();
-    } catch {
-      return null;
-    }
-    await page.waitForTimeout(3000);
-    const rowCount = await searchPage.getResultRowCount();
-    if (rowCount === 0) return null;
-    return getHotelRoomTexts(page);
-  }
+  test.describe('11. Дети/возраст', () => {
 
   test('0 детей — выдача содержит только 2AD', async ({ page }) => {
     const searchPage = new SearchTourPage(page);
@@ -845,38 +806,10 @@ test.describe('Фильтры страницы "Туры с перелетом"'
     }
   });
 
+  });
+
   // ===== 12. Валюта =====
-
-  async function setCurrency(page, value) {
-    const optionIndex = value === 'RUB' ? 0 : 1;
-    await page.locator('.CURRENCY_chosen .chosen-single').click();
-    await page.waitForTimeout(300);
-    await page.locator(`.CURRENCY_chosen .active-result[data-option-array-index="${optionIndex}"]`).click();
-    await page.waitForTimeout(500);
-  }
-
-  async function searchAndGetPrices(page, searchPage) {
-    await searchPage.clickSearch();
-    await page.waitForTimeout(3000);
-    try {
-      await searchPage.waitForResults();
-    } catch {
-      return null;
-    }
-    await page.waitForTimeout(3000);
-    const rowCount = await searchPage.getResultRowCount();
-    if (rowCount === 0) return null;
-    return page.evaluate(() => {
-      const rows = document.querySelectorAll('tr[data-state]');
-      return Array.from(rows).map(r => {
-        const td = r.querySelector('td.td_price');
-        if (!td) return '';
-        const span = td.querySelector('span');
-        if (span) return span.textContent.trim();
-        return td.textContent.trim();
-      }).filter(Boolean);
-    });
-  }
+  test.describe('12. Валюта', () => {
 
   test('RUB — цены отображаются в рублях', async ({ page }) => {
     const searchPage = new SearchTourPage(page);
@@ -902,25 +835,10 @@ test.describe('Фильтры страницы "Туры с перелетом"'
     }
   });
 
+  });
+
   // ===== 13. Город (направление) =====
-
-  const GROUP_CITIES = [
-    'Аланья', 'Анталья', 'Белек', 'Бодрум',
-    'Даламан', 'Кемер', 'Мармарис', 'Сиде',
-    'Стамбул', 'Фетхие',
-  ];
-
-  async function getHotelCities(page) {
-    return page.evaluate(() => {
-      const rows = document.querySelectorAll('tr[data-state]');
-      return Array.from(rows).map(r => {
-        const td = r.querySelector('td.link-hotel');
-        if (!td) return '';
-        const match = td.textContent.trim().match(/\(([^)]+)\)/);
-        return match ? match[1].trim() : '';
-      }).filter(Boolean);
-    });
-  }
+  test.describe('13. Город (направление)', () => {
 
   test('Город: выдача содержит туры в выбранном городе', async ({ page }) => {
     const searchPage = new SearchTourPage(page);
@@ -972,34 +890,10 @@ test.describe('Фильтры страницы "Туры с перелетом"'
     test.skip(true, `Нет туров для городов: ${[...tried].join(', ')}`);
   });
 
+  });
+
   // ===== 14. Категория отеля (звёзды) =====
-
-  const STAR_VALUES = { '2*': '10002', '3*': '10003', '4*': '10004', '5*': '10005' };
-
-  async function searchAndGetHotels(page, searchPage) {
-    await searchPage.clickSearch();
-    await page.waitForTimeout(3000);
-
-    try {
-      await searchPage.waitForResults();
-    } catch {
-      return null;
-    }
-
-    await page.waitForTimeout(3000);
-
-    const rowCount = await searchPage.getResultRowCount();
-    if (rowCount === 0) return null;
-
-    return page.evaluate(() => {
-      const rows = document.querySelectorAll('tr[data-state]');
-      return Array.from(rows).map(r => {
-        const td = r.querySelector('td.link-hotel');
-        if (!td) return '';
-        return td.textContent.trim();
-      }).filter(Boolean);
-    });
-  }
+  test.describe('14. Категория отеля (звёзды)', () => {
 
   test('3* — все отели имеют категорию 3 звезды', async ({ page }) => {
     const searchPage = new SearchTourPage(page);
@@ -1035,49 +929,10 @@ test.describe('Фильтры страницы "Туры с перелетом"'
     }
   });
 
+  });
+
   // ===== 15. Гостиница =====
-
-  async function getAllHotels(page) {
-    await page.waitForFunction(() => {
-      const labels = document.querySelectorAll('div.checklistbox.HOTELS label');
-      let count = 0;
-      for (const label of labels) {
-        const cb = label.querySelector('input[type="checkbox"]');
-        if (cb && cb.id.startsWith('hotel')) count++;
-      }
-      return count > 5;
-    }, { timeout: 10000 }).catch(() => {});
-    return page.evaluate(() => {
-      const labels = document.querySelectorAll('div.checklistbox.HOTELS label');
-      const result = [];
-      for (const label of labels) {
-        const cb = label.querySelector('input[type="checkbox"]');
-        const text = label.textContent.trim();
-        if (cb && text && cb.id.startsWith('hotel')) {
-          result.push({ id: cb.id, text });
-        }
-      }
-      return result;
-    });
-  }
-
-  async function selectHotels(page, hotels) {
-    for (const hotel of hotels) {
-      await page.locator(`#${hotel.id}`).click({ force: true });
-      await page.waitForTimeout(300);
-    }
-  }
-
-  async function getResultHotelNames(page) {
-    return page.evaluate(() => {
-      const rows = document.querySelectorAll('tr[data-state]');
-      return Array.from(rows).map(r => {
-        const td = r.querySelector('td.link-hotel');
-        if (!td) return '';
-        return td.textContent.trim();
-      }).filter(Boolean);
-    });
-  }
+  test.describe('15. Гостиница', () => {
 
   test('Гостиница: выдача содержит только выбранные гостиницы', async ({ page }) => {
     const searchPage = new SearchTourPage(page);
@@ -1127,27 +982,10 @@ test.describe('Фильтры страницы "Туры с перелетом"'
     test.skip(true, 'Нет туров для выбранных гостиниц');
   });
 
+  });
+
   // ===== 16. Питание =====
-
-  const MEALS = [
-    { code: 'AI', expected: 'All Inclusive' },
-    { code: 'BB', expected: 'Bed & Breakfast' },
-    { code: 'FB', expected: 'Full Board' },
-    { code: 'HB', expected: 'Half Board' },
-    { code: 'RO', expected: 'Room Only' },
-    { code: 'UAI', expected: 'Ultra All Inclusive' },
-  ];
-
-  async function getResultMeals(page) {
-    return page.evaluate(() => {
-      const rows = document.querySelectorAll('tr[data-state]');
-      return Array.from(rows).map(r => {
-        const td = r.querySelector('td.hotel-meals');
-        if (!td) return '';
-        return td.textContent.trim();
-      }).filter(Boolean);
-    });
-  }
+  test.describe('16. Питание', () => {
 
   test('Питание: выдача содержит туры с выбранным типом питания', async ({ page }) => {
     const searchPage = new SearchTourPage(page);
@@ -1193,20 +1031,10 @@ test.describe('Фильтры страницы "Туры с перелетом"'
     test.skip(true, `Нет туров с выбранным питанием: ${[...tried].join(', ')}`);
   });
 
-  // ===== 17. Есть места на рейсы =====
+  });
 
-  async function waitAndGetResults(page, searchPage) {
-    await searchPage.clickSearch();
-    await page.waitForTimeout(3000);
-    try {
-      await searchPage.waitForResults();
-    } catch {
-      return false;
-    }
-    await page.waitForTimeout(3000);
-    const count = await searchPage.getResultRowCount();
-    return count > 0;
-  }
+  // ===== 17. Есть места на рейсы =====
+  test.describe('17. Есть места на рейсы', () => {
 
   test('Есть места на рейсы: с фильтром все туры имеют кнопку, без фильтра — некоторые без кнопки', async ({ page }) => {
     const searchPage = new SearchTourPage(page);
@@ -1252,14 +1080,10 @@ test.describe('Фильтры страницы "Туры с перелетом"'
     }
   });
 
-  // ===== 18. Нет остановки продажи =====
+  });
 
-  async function hasRedRows(page) {
-    return page.evaluate(() => {
-      const rows = document.querySelectorAll('tr[data-state]');
-      return Array.from(rows).some(r => r.classList.contains('red_row'));
-    });
-  }
+  // ===== 18. Нет остановки продажи =====
+  test.describe('18. Нет остановки продажи', () => {
 
   test('Нет остановки продажи: с фильтром нет строк с остановкой продажи', async ({ page }) => {
     const searchPage = new SearchTourPage(page);
@@ -1284,14 +1108,10 @@ test.describe('Фильтры страницы "Туры с перелетом"'
     expect(anyRed).toBeFalsy();
   });
 
-  // ===== 19. Мгновенное подтверждение =====
+  });
 
-  async function getResultRowClasses(page) {
-    return page.evaluate(() => {
-      const rows = document.querySelectorAll('tr[data-state]');
-      return Array.from(rows).map(r => Array.from(r.classList));
-    });
-  }
+  // ===== 19. Мгновенное подтверждение =====
+  test.describe('19. Мгновенное подтверждение', () => {
 
   test('Мгновенное подтверждение: все туры подсвечены зелёным', async ({ page }) => {
     const searchPage = new SearchTourPage(page);
@@ -1326,7 +1146,10 @@ test.describe('Фильтры страницы "Туры с перелетом"'
     }
   });
 
+  });
+
   // ===== 20. Не отображать PROMO =====
+  test.describe('20. Не отображать PROMO', () => {
 
   test('Не отображать PROMO: в столбце "Тур" отсутствует текст PROMO', async ({ page }) => {
     const searchPage = new SearchTourPage(page);
@@ -1365,7 +1188,10 @@ test.describe('Фильтры страницы "Туры с перелетом"'
     }
   });
 
+  });
+
   // ===== 21. Группировать результаты =====
+  test.describe('21. Группировать результаты', () => {
 
   test('Группировать результаты: без фильтра — корзина, с фильтром — радиокнопка', async ({ page }) => {
     const searchPage = new SearchTourPage(page);
@@ -1449,14 +1275,10 @@ test.describe('Фильтры страницы "Туры с перелетом"'
     }
   });
 
-  // ===== 22. Цена до (фиксированное значение) =====
+  });
 
-  async function getVisibleResultCount(page) {
-    return page.evaluate(() => {
-      return Array.from(document.querySelectorAll('tr[data-state]'))
-        .filter(tr => tr.getBoundingClientRect().height > 0).length;
-    });
-  }
+  // ===== 22. Цена до (фиксированное значение) =====
+  test.describe('22. Цена до (фиксированное значение)', () => {
 
   test('Цена до: фильтр уменьшает количество результатов', async ({ page }) => {
     const searchPage = new SearchTourPage(page);
@@ -1506,7 +1328,10 @@ test.describe('Фильтры страницы "Туры с перелетом"'
     expect(countWithFilter).toBeLessThanOrEqual(countWithoutFilter);
   });
 
+  });
+
   // ===== 23. Цена до (динамическое среднее значение) =====
+  test.describe('23. Цена до (динамическое среднее значение)', () => {
 
   test('Цена до: фильтр с динамическим средним значением уменьшает количество результатов', async ({ page }) => {
     const searchPage = new SearchTourPage(page);
@@ -1569,7 +1394,10 @@ test.describe('Фильтры страницы "Туры с перелетом"'
     expect(countWithFilter).toBeLessThanOrEqual(countWithoutFilter);
   });
 
+  });
+
   // ===== 24. Цена от (фиксированное значение) =====
+  test.describe('24. Цена от (фиксированное значение)', () => {
 
   test('Цена от: фильтр уменьшает количество результатов', async ({ page }) => {
     const searchPage = new SearchTourPage(page);
@@ -1619,7 +1447,10 @@ test.describe('Фильтры страницы "Туры с перелетом"'
     expect(countWithFilter).toBeLessThanOrEqual(countWithoutFilter);
   });
 
+  });
+
   // ===== 25. Цена от (динамическое среднее значение) =====
+  test.describe('25. Цена от (динамическое среднее значение)', () => {
 
   test('Цена от: фильтр с динамическим средним значением уменьшает количество результатов', async ({ page }) => {
     const searchPage = new SearchTourPage(page);
@@ -1681,4 +1512,7 @@ test.describe('Фильтры страницы "Туры с перелетом"'
     // Фильтр должен уменьшить количество результатов
     expect(countWithFilter).toBeLessThanOrEqual(countWithoutFilter);
   });
+
+  });
+
 });
