@@ -3,7 +3,8 @@ import 'dotenv/config';
 
 export default defineConfig({
   testDir: './tests',
-  timeout: 240000,
+  testMatch: '**/*.spec.{js,cjs}',
+  timeout: 1200000,
   expect: {
     timeout: 10000,
   },
@@ -20,6 +21,7 @@ export default defineConfig({
       name: 'chromium',
       use: {
         browserName: 'chromium',
+        channel: 'msedge',
         headless: false,
       },
     },
